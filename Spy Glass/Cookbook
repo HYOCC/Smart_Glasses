@@ -1,0 +1,10 @@
+
+Implement first_time authentication, registers you and all your data.
+- Ask for unique ID, then ask for name to be associated with the ID to be called. Scans face and take multiple frames of face, save face into data base as ID. Store unique ID(Given by the user) as a key also. Store given name and creates a new google gemini ai for the user to be stored (Can also just create a memory that is used for google gemini ai and store that)
+
+
+- Data to be stored, facial as key, store chat history with ai, ai memory, ai conficguration as items. 
+
+implement authentication, facial recognition then matches to database for a unique key and also all the data such as google gemin AI chat history data
+
+s
