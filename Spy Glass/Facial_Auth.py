@@ -2,6 +2,11 @@ import os
 from face_recognition import load_image_file, face_locations, face_encodings, compare_faces
 import cv2 
 from time import sleep
+import threading
+
+def start_cam():
+    global cam 
+    cam = cv2.VideoCapture(0)
 
 def first_time_auth(user_id:str, Name:str):
     cam = cv2.VideoCapture(0)
@@ -32,8 +37,8 @@ def first_time_auth(user_id:str, Name:str):
                 ret, frame = cam.read() 
                 
                 if not ret: 
-                        print('Something went wrong getting the camera feed')
-                        break
+                    print('Something went wrong getting the camera feed')
+                    break
                     
                 # Convert the frame from BGR (OpenCV format) to RGB (face_recognition format)
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
@@ -63,18 +68,20 @@ def first_time_auth(user_id:str, Name:str):
     cam.release()
     cv2.destroyAllWindows()
 
-
-
-
 def authenticate(user_id:str):
+    #Starts the cam using multithread so loading the images can run first
+    start_cam_thread = threading.Thread(target=start_cam)
+    start_cam_thread.start()
+    print('loading camera')
+    
     #Loads in available images from given user id to load in data
     if os.path.exists(f'Known_Face/{user_id}'):
+        #Loading in system face data
         user_id_dir = f'Known_Face/{user_id}'            
         user_id_with_face = {}
 
         for image_name in os.listdir(user_id_dir):
             image_path_file = os.path.join(user_id_dir, image_name)
-            print(image_path_file)#Logging
             
             image = load_image_file(image_path_file)
             encodings = face_encodings(image)
@@ -85,16 +92,17 @@ def authenticate(user_id:str):
                 else:
                     user_id_with_face[user_id] = [encodings[0]]
                 #known_names.append(os.path.splitext(image_name)[0])  # Use filename as label
-            print('known faces lodaded and encoded')
-            print(user_id_with_face)
+        print('known faces lodaded and encoded')
     else:
         print('Cant find user_id ' + user_id)
         print(f'Known_Face/{user_id}')
         return 
     
+    #Only run the code below once the cam has finished loading
+    start_cam_thread.join()
+    print('cam finished loading')
+    
     run = True 
-    #Starts cam
-    cam = cv2.VideoCapture(0)
     #Starts authenticating User
     while run:
         ret, frame = cam.read() #Checks if frames was successfully captured then save the frame onto 'frame'
@@ -107,20 +115,24 @@ def authenticate(user_id:str):
         
         face_location = face_locations(rgb_frame, model='hog') #Detects faces 
         face_encoding = face_encodings(rgb_frame, face_location) #Encodes the faces 
-        
+    
         #Compares the seen face to known faces
         for (top, right, bottom, left), encoding in zip(face_location, face_encoding):
-            matches = compare_faces(user_id_with_face[user_id], encoding)
-            if True in matches:
+            matches = compare_faces(user_id_with_face[user_id], encoding, tolerance=.5)
+            print(matches)#Logging
+            
+            #If more than 2 matches are found when comparing with the system images with the target face
+            if matches.count(True) >= 2:
                 print('detected ' + user_id)
-                run = False #breaks the finding person function once a detected person is found
+                run = False #breaks the finding person function once a detected person is found            
+        
+        #If facial authentication was not success, let the user know
+        if run == True:
+            print('Not success in facial recognition')
+            run = False 
+                        
     #Lets go all of resouces such as the cam etc
     cam.release()
     cv2.destroyAllWindows()
-        
     
-    
-    
-
-    
-authenticate('HYO)C')
+authenticate('HARRISON')
